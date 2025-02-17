@@ -111,6 +111,9 @@ export default function BasicTable() {
     if (userId) {
       socket.emit("joinChat", { userId });
 
+      socket.on("getMessage", () => {
+        fetchUserChats();
+      });
       socket.on("newMessage", (newMessage) => {
         if (
           newMessage.senderId === selectedFriendId ||
