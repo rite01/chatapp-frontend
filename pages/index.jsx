@@ -68,8 +68,12 @@ export default function Register() {
         formData.append("profilePic", userData.profilePic);
       }
 
-      const response = await axiosInstance.post("/auth/create", formData);
-
+      const response = await axiosInstance.post("/auth/create", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
       setResponseMessage(response.data?.message || "Registration successful.");
       if (response.status === 200 || response.status === 201) {
         setIsLoading(false);
