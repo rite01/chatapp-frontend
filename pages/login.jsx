@@ -1,7 +1,15 @@
 import Head from "next/head";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { Alert, Box, Button, TextField, Typography, Grid } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Grid,
+  CircularProgress,
+} from "@mui/material";
 import axiosInstance from "../src/Api/axios";
 import { ChatAppImageSignUp } from "../src/assets";
 import Image from "next/image";
@@ -14,6 +22,7 @@ export default function Login() {
     password: "",
   });
   const [error, setError] = useState();
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -27,6 +36,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await axiosInstance.post("/auth/login", userData);
       const data = response.data;
@@ -43,6 +53,7 @@ export default function Login() {
       }
 
       if (response.status === 200 || response.status === 201) {
+        setIsLoading(false);
         toast.success("Login Successful!", {
           position: "top-center",
           autoClose: 5000,
@@ -50,6 +61,7 @@ export default function Login() {
         router.push("/userlist");
       }
     } catch (error) {
+      setIsLoading(false);
       setError(
         error.response?.data?.message || "An error occurred while logging in."
       );
@@ -151,9 +163,14 @@ export default function Login() {
               color="primary"
               type="submit"
               fullWidth
+              disabled={isLoading}
               size="large"
             >
-              Submit
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Submit"
+              )}
             </Button>
           </Box>
 
@@ -164,18 +181,8 @@ export default function Login() {
           )}
 
           <Box mt={3}>
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <Button
-                  variant="text"
-                  fullWidth
-                  size="small"
-                  onClick={handleForgotPassword}
-                >
-                  Forgot Password?
-                </Button>
-              </Grid>
-              <Grid item xs={6}>
+            <Grid container spacing={1}>
+              <Grid item xs={12}>
                 <Button
                   variant="text"
                   fullWidth
