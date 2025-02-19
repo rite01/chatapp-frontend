@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import {
   Grid,
@@ -9,10 +9,13 @@ import {
   Box,
   Alert,
   CircularProgress,
+  Slider,
 } from "@mui/material";
 import axiosInstance from "../src/Api/axios";
 import { ChatAppImageSignUp } from "../src/assets";
 import Image from "next/image";
+import { getCroppedImage } from "../src/Croper/getCroppedImage";
+import ImageCropper from "../src/Croper/ImageCropper";
 
 export default function Register() {
   const [userData, setUserData] = useState({
@@ -20,8 +23,13 @@ export default function Register() {
     email: "",
     password: "",
     profilePic: null,
+    profilePicPreview: null,
   });
 
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [croppedImage, setCroppedImage] = useState(null);
   const [responseMessage, setResponseMessage] = useState("");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,11 +44,29 @@ export default function Register() {
     }));
   };
 
-  // Handle file input changes
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+
+  // Handle file selection
   const handleFileChange = (e) => {
-    setUserData((prevState) => ({
-      ...prevState,
-      profilePic: e.target.files[0],
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setSelectedImage(url);
+      setIsCropperOpen(true); // Open cropper
+    }
+  };
+
+  // Handle cropped image
+  const handleCropComplete = async (croppedAreaPixels) => {
+    const croppedImage = await getCroppedImage(
+      selectedImage,
+      croppedAreaPixels
+    );
+    setUserData((prev) => ({
+      ...prev,
+      profilePic: croppedImage,
+      profilePicPreview: URL.createObjectURL(croppedImage),
     }));
   };
 
@@ -73,11 +99,11 @@ export default function Register() {
           "Content-Type": "multipart/form-data",
         },
       });
-      
+
       setResponseMessage(response.data?.message || "Registration successful.");
       if (response.status === 200 || response.status === 201) {
         setIsLoading(false);
-        router.push("/login"); // Redirect to login page
+        router.push("/login");
       } else {
         setError(true);
         setIsLoading(false);
@@ -93,10 +119,6 @@ export default function Register() {
     }
   };
 
-  const handleSignIn = () => {
-    router.push("/login");
-  };
-
   return (
     <Grid container sx={{ minHeight: "100vh" }}>
       <Head>
@@ -104,7 +126,6 @@ export default function Register() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* Left side: Image */}
       <Grid
         item
         xs={12}
@@ -126,7 +147,6 @@ export default function Register() {
         />
       </Grid>
 
-      {/* Right side: Form */}
       <Grid
         item
         xs={12}
@@ -154,12 +174,7 @@ export default function Register() {
           <Typography variant="h4" component="h1" gutterBottom align="center">
             Register
           </Typography>
-          <Typography
-            variant="body1"
-            color="textSecondary"
-            gutterBottom
-            align="center"
-          >
+          <Typography variant="body1" color="textSecondary" align="center">
             Fill in the details to create your account.
           </Typography>
 
@@ -193,13 +208,106 @@ export default function Register() {
               onChange={handleChange}
               required
             />
-            <TextField
-              label="Profile Picture"
-              type="file"
-              inputProps={{ accept: "image/*" }}
-              onChange={handleFileChange}
-              fullWidth
-            />
+
+            {/* <Box display="flex" flexDirection="column" alignItems="center">
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                id="profile-pic"
+                onChange={handleFileChange}
+              />
+              <label htmlFor="profile-pic">
+                <Button variant="contained" component="span" color="secondary">
+                  Upload Profile Picture
+                </Button>
+              </label>
+
+              {userData.profilePicPreview && (
+                <Box
+                  position="relative"
+                  width={250}
+                  height={250}
+                  mt={2}
+                  sx={{ background: "#ddd", borderRadius: "10px" }}
+                >
+                  <Cropper
+                    image={userData.profilePicPreview}
+                    crop={crop}
+                    zoom={zoom}
+                    aspect={1}
+                    onCropChange={setCrop}
+                    onCropComplete={onCropComplete}
+                    onZoomChange={setZoom}
+                  />
+                </Box>
+              )}
+
+              {userData.profilePicPreview && (
+                <Box width="80%" mt={2}>
+                  <Typography>Zoom</Typography>
+                  <Slider
+                    value={zoom}
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    onChange={(e, newValue) => setZoom(newValue)}
+                  />
+                </Box>
+              )}
+
+              {userData.profilePicPreview && (
+                <Button variant="contained" color="primary" onClick={cropImage}>
+                  Crop & Save
+                </Button>
+              )}
+
+              {croppedImage && (
+                <Box mt={2}>
+                  <Image
+                    src={croppedImage}
+                    alt="Cropped Profile"
+                    width={100}
+                    height={100}
+                    style={{ objectFit: "cover", borderRadius: "50%" }}
+                  />
+                </Box>
+              )}
+            </Box> */}
+
+            <Grid container>
+              {/* Profile Upload */}
+              <input
+                type="file"
+                accept="image/*"
+                id="profile-pic"
+                hidden
+                onChange={handleFileChange}
+              />
+              <label htmlFor="profile-pic">
+                <Button variant="contained" component="span" color="secondary">
+                  Upload Profile Picture
+                </Button>
+              </label>
+
+              {userData.profilePicPreview && (
+                <Image
+                  src={userData.profilePicPreview}
+                  alt="Profile Preview"
+                  width={100}
+                  height={100}
+                />
+              )}
+
+              {/* Cropper Dialog */}
+              <ImageCropper
+                open={isCropperOpen}
+                image={selectedImage}
+                onClose={() => setIsCropperOpen(false)}
+                onCropComplete={handleCropComplete}
+              />
+            </Grid>
+
             <Button
               variant="contained"
               color="primary"
@@ -223,17 +331,6 @@ export default function Register() {
               </Alert>
             </Box>
           )}
-
-          <Box mt={3}>
-            <Button
-              variant="text"
-              fullWidth
-              size="small"
-              onClick={handleSignIn}
-            >
-              Sign In
-            </Button>
-          </Box>
         </Box>
       </Grid>
     </Grid>
