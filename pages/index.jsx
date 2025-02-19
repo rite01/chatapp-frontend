@@ -103,7 +103,7 @@ export default function Register() {
       setResponseMessage(response.data?.message || "Registration successful.");
       if (response.status === 200 || response.status === 201) {
         setIsLoading(false);
-        router.push("/login");
+        router.push("/userlist");
       } else {
         setError(true);
         setIsLoading(false);
