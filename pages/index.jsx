@@ -119,6 +119,10 @@ export default function Register() {
     }
   };
 
+  const handleSignUp = () => {
+    router.push("/login");
+  };
+
   return (
     <Grid container sx={{ minHeight: "100vh" }}>
       <Head>
@@ -322,6 +326,21 @@ export default function Register() {
                 "Register"
               )}
             </Button>
+          </Box>
+
+          <Box mt={3}>
+            <Grid container spacing={1}>
+              <Grid item xs={12}>
+                <Button
+                  variant="text"
+                  fullWidth
+                  size="small"
+                  onClick={handleSignIn}
+                >
+                  Sign In
+                </Button>
+              </Grid>
+            </Grid>
           </Box>
 
           {responseMessage && (
