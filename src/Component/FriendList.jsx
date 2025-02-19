@@ -24,12 +24,12 @@ const FriendsTable = ({ friends, handleChatClick }) => {
             <TableCell>Profile</TableCell>
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
-            <TableCell>Action</TableCell>
+            {/* <TableCell>Action</TableCell> */}
           </TableRow>
         </TableHead>
         <TableBody>
           {friends.map((row) => (
-            <TableRow key={row.name}>
+            <TableRow key={row.name} onClick={() => handleChatClick(row)}>
               <TableCell>
                 <Avatar
                   alt={row.name}
@@ -38,7 +38,7 @@ const FriendsTable = ({ friends, handleChatClick }) => {
               </TableCell>
               <TableCell>{row.name}</TableCell>
               <TableCell>{row.email}</TableCell>
-              <TableCell>
+              {/* <TableCell>
                 <Button
                   variant="contained"
                   color="primary"
@@ -54,7 +54,7 @@ const FriendsTable = ({ friends, handleChatClick }) => {
                 >
                   Unfriend
                 </Button>
-              </TableCell>
+              </TableCell> */}
             </TableRow>
           ))}
         </TableBody>
