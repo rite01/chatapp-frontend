@@ -71,7 +71,7 @@ const ChatDrawer = ({
 
   return (
     <Drawer anchor="right" open={isDrawerOpen} onClose={closeDrawer}>
-      <Box sx={{ width: 350, p: 2 }}>
+      <Box sx={{ width: 550, p: 2 }}>
         {selectedChat && (
           <Box display="flex" alignItems="center" mb={2}>
             <Avatar
