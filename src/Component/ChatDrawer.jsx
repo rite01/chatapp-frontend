@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Drawer,
   Box,
@@ -7,8 +7,11 @@ import {
   List,
   ListItem,
   TextField,
-  Button,
+  IconButton,
+  InputAdornment,
+  Tooltip,
 } from "@mui/material";
+import { SendRounded, Edit, Delete } from "@mui/icons-material";
 import axiosInstance from "../Api/axios";
 
 const ChatDrawer = ({
@@ -24,6 +27,9 @@ const ChatDrawer = ({
 }) => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
+
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editText, setEditText] = useState("");
 
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
@@ -69,6 +75,25 @@ const ChatDrawer = ({
     }
   };
 
+  const editMessage = async (chatId) => {
+    try {
+      await axiosInstance.put(`/chat/chats/${chatId}`, {
+        message: editText,
+      });
+
+      setChatData(
+        chatData.map((chat) =>
+          chat._id === chatId ? { ...chat, message: editText } : chat
+        )
+      );
+
+      setEditingMessage(null);
+      setEditText("");
+    } catch (error) {
+      console.error("Error updating message:", error);
+    }
+  };
+
   return (
     <Drawer anchor="right" open={isDrawerOpen} onClose={closeDrawer}>
       <Box sx={{ width: 550, p: 2 }}>
@@ -110,21 +135,36 @@ const ChatDrawer = ({
                       : "flex-end",
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    backgroundColor:
-                      chat?.sender?._id === selectedChat?._id
-                        ? "#e1f5fe"
-                        : "#f1f1f1",
-                    borderRadius: 2,
-                    padding: "8px 12px",
-                    maxWidth: "80%",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {chat.message}
-                </Typography>
+                {editingMessage === chat._id ? (
+                  <TextField
+                    fullWidth
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onBlur={() => setEditingMessage(null)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        editMessage(chat._id);
+                      }
+                    }}
+                  />
+                ) : (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      backgroundColor:
+                        chat?.sender?._id === selectedChat?._id
+                          ? "#e1f5fe"
+                          : "#f1f1f1",
+                      borderRadius: 2,
+                      padding: "8px 12px",
+                      maxWidth: "80%",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {chat.message}
+                  </Typography>
+                )}
+
                 <Typography
                   variant="caption"
                   color="text.secondary"
@@ -132,7 +172,8 @@ const ChatDrawer = ({
                 >
                   {new Date(chat.timestamp).toLocaleString()}
                 </Typography>
-                {chat.sender._id !== userId && chat.seen && (
+
+                {/* {chat.sender._id !== userId && chat.seen && (
                   <Typography
                     variant="caption"
                     color="success.main"
@@ -140,15 +181,33 @@ const ChatDrawer = ({
                   >
                     Seen
                   </Typography>
-                )}
-                <Button
-                  size="small"
-                  color="error"
-                  onClick={() => deleteMessage(chat._id)}
-                  sx={{ mt: 0.5 }}
-                >
-                  Delete
-                </Button>
+                )} */}
+
+                <Box display="flex" gap={1} mt={0.5}>
+                  {chat.sender._id === userId && (
+                    <Tooltip title="Edit Message" arrow>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => {
+                          setEditingMessage(chat._id);
+                          setEditText(chat.message);
+                        }}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Tooltip title="Delete Message" arrow>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => deleteMessage(chat._id)}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               </ListItem>
             ))}
             <div ref={messagesEndRef} />
@@ -163,23 +222,27 @@ const ChatDrawer = ({
             onChange={(e) => setMessage(e.target.value)}
             variant="outlined"
             sx={{
-              mb: 2,
               borderRadius: 2,
               backgroundColor: "#f5f5f5",
             }}
-          />
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            onClick={() => StartChat(selectedChat?._id)}
-            sx={{
-              padding: "12px 0",
-              fontWeight: "bold",
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                StartChat(selectedChat?._id);
+              }
             }}
-          >
-            Send
-          </Button>
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    color="primary"
+                    onClick={() => StartChat(selectedChat?._id)}
+                  >
+                    <SendRounded />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
         </Box>
       </Box>
     </Drawer>
