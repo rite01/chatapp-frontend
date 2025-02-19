@@ -119,7 +119,7 @@ export default function Register() {
     }
   };
 
-  const handleSignUp = () => {
+  const handleSignIn = () => {
     router.push("/login");
   };
 
