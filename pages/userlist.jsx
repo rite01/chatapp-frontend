@@ -103,7 +103,7 @@ export default function BasicTable() {
     }
   }, [userId, selectedFriendId]);
 
-  const socket = io("http://localhost:8001", {
+  const socket = io("https://chatapp-be-1.onrender.com/", {
     transports: ["websocket"],
   });
 
