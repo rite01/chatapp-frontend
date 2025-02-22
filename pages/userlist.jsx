@@ -23,6 +23,15 @@ export default function BasicTable() {
   const [chatData, setChatData] = useState([]);
 
   useEffect(() => {
+    const newSocket = io("http://localhost:8001", {
+      transports: ["websocket", "polling"],
+    });
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     setUserId(localStorage.getItem("userId"));
   }, []);
 
@@ -58,6 +67,32 @@ export default function BasicTable() {
     }
   }, [fetchData, userId]);
 
+  const [notifications, setNotifications] = useState([]);
+
+  const fetchNotifications = async () => {
+    if (!userId) return;
+    try {
+      const response = await axiosInstance.get(
+        `/notifications/notifications/${userId}`
+      );
+
+      setNotifications(
+        Array.isArray(response?.data?.notifications)
+          ? response?.data?.notifications
+          : []
+      );
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      setNotifications([]);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchNotifications();
+    }
+  }, [userId]);
+
   const sendRequest = useCallback(
     async (receiverId) => {
       if (!userId) return;
@@ -69,6 +104,7 @@ export default function BasicTable() {
         toast.success("Request sent successfully!");
         handleUserData();
         handleUserDataRequest();
+        socket.emit("sendFriendRequest", { senderId: userId, receiverId });
       } catch (error) {
         toast.error(error.response?.data?.message || "Failed to send request.");
       }
@@ -83,6 +119,7 @@ export default function BasicTable() {
         toast.success("Request accepted successfully!");
         handleUserDataMyFriend();
         handleUserDataRequest();
+        socket.emit("acceptFriendRequest", { senderId, receiverId: userId });
       } catch (error) {
         console.error("Network error:", error.message);
       }
@@ -103,8 +140,8 @@ export default function BasicTable() {
     }
   }, [userId, selectedFriendId]);
 
-  const socket = io("https://chatapp-be-1.onrender.com/", {
-    transports: ["websocket"],
+  const socket = io("http://localhost:8001", {
+    transports: ["websocket", "polling"],
   });
 
   useEffect(() => {
@@ -114,6 +151,15 @@ export default function BasicTable() {
       socket.on("getMessage", () => {
         fetchUserChats();
       });
+
+      socket.on("friendRequestReceived", () => {
+        handleUserDataRequest();
+      });
+
+      socket.on("friendRequestAccepted", () => {
+        handleUserDataMyFriend();
+      });
+
       socket.on("newMessage", (newMessage) => {
         if (
           newMessage.senderId === selectedFriendId ||
@@ -186,7 +232,7 @@ export default function BasicTable() {
 
   return (
     <>
-      <Header />
+      <Header userId={userId} />
       <ToastContainer position="top-right" autoClose={3000} />
       <Grid container spacing={2} sx={{ p: 2 }}>
         <Grid item xs={7}>
