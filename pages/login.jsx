@@ -41,6 +41,10 @@ export default function Login() {
       const response = await axiosInstance.post("/auth/login", userData);
       const data = response.data;
 
+      if (data?.message) {
+        setError(data.message);
+      }
+
       if (data?.user?._id) {
         localStorage.setItem("userId", data.user._id);
         localStorage.setItem("email", data.user.email);
