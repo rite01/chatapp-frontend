@@ -1,103 +1,86 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import IconButton from "@mui/material/IconButton";
-import MenuIcon from "@mui/icons-material/Menu";
-import Button from "@mui/material/Button";
-import Badge from "@mui/material/Badge";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import Divider from "@mui/material/Divider";
-import Box from "@mui/material/Box";
-import Avatar from "@mui/material/Avatar";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Button,
+  Box,
+  Avatar,
+  Modal,
+  Paper,
+  Divider,
+  TextField,
+} from "@mui/material";
+import { Menu as MenuIcon, Edit as EditIcon } from "@mui/icons-material";
 import axiosInstance from "../Api/axios";
 
-const Header = () => {
+const Header = ({ userId }) => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [userId, setUserId] = useState(null);
   const [userDetail, setUserDetail] = useState({
     userEmail: "",
     userName: "",
     userProfilePic: "",
   });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [name, setName] = useState("");
+  const [profilePic, setProfilePic] = useState(null);
+  const [previewImage, setPreviewImage] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedUserId = localStorage.getItem("userId");
       const userEmail = localStorage.getItem("email");
       const userName = localStorage.getItem("name");
       const userProfilePic = localStorage.getItem("profileImage");
-      setUserDetail({
-        userEmail: userEmail,
-        userName: userName,
-        userProfilePic: userProfilePic,
-      });
-      setUserId(storedUserId);
+      setUserDetail({ userEmail, userName, userProfilePic });
     }
   }, []);
 
-  const fetchNotifications = async () => {
-    if (!userId) return;
-    try {
-      const response = await axiosInstance.get(
-        `/notifications/notifications/${userId}`
-      );
-      setNotifications(
-        Array.isArray(response?.data?.notifications)
-          ? response?.data?.notifications
-          : []
-      );
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      setNotifications([]);
-    }
-  };
-
-  useEffect(() => {
-    if (userId) {
-      fetchNotifications();
-    }
-  }, [userId]);
-
-  const handleNotificationClick = async (event) => {
-    setAnchorEl(event.currentTarget);
-
-    const unreadNotificationIds = notifications
-      .filter((notif) => !notif.isRead)
-      .map((notif) => notif._id);
-
-    if (unreadNotificationIds.length === 0) return;
-
-    try {
-      await axiosInstance.post("/notifications/notifications/read", {
-        notificationIds: unreadNotificationIds,
-      });
-
-      setNotifications((prev) =>
-        prev.map((notif) =>
-          unreadNotificationIds.includes(notif._id)
-            ? { ...notif, isRead: true }
-            : notif
-        )
-      );
-    } catch (error) {
-      console.error("Error marking notifications as read:", error);
-    }
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
+  const handleModalOpen = () => setModalOpen(true);
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setEditMode(false);
+    setPreviewImage("");
   };
 
   const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.clear();
-      router.push("/login");
+    localStorage.clear();
+    router.push("/login");
+  };
+
+  const handleUpdate = async () => {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("userId", userId);
+
+    if (profilePic) formData.append("profilePic", profilePic);
+
+    try {
+      const response = await axiosInstance.post("/auth/update", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const updatedUser = response.data.user;
+      localStorage.setItem("name", updatedUser.name);
+      localStorage.setItem("profileImage", updatedUser.profilePic);
+      setUserDetail({
+        userEmail: userDetail.userEmail,
+        userName: updatedUser.name,
+        userProfilePic: updatedUser.profilePic,
+      });
+      handleModalClose();
+    } catch (error) {
+      console.error("Failed to update user", error);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePic(file);
+      setPreviewImage(URL.createObjectURL(file));
     }
   };
 
@@ -117,88 +100,6 @@ const Header = () => {
           Chat App
         </Typography>
 
-        <IconButton color="inherit" onClick={handleNotificationClick}>
-          <Badge
-            badgeContent={notifications.filter((n) => !n.isRead).length}
-            color="error"
-          >
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
-
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleClose}
-          PaperProps={{
-            sx: {
-              width: 300,
-              maxHeight: 300,
-              overflowY: "auto",
-            },
-          }}
-        >
-          {notifications.length === 0 ? (
-            <MenuItem onClick={handleClose}>No new notifications</MenuItem>
-          ) : (
-            notifications.map((notif, index) => (
-              <div key={notif._id}>
-                <MenuItem onClick={handleClose}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                    }}
-                  >
-                    {notif.sender?.profilePic ? (
-                      <img
-                        src={notif.sender.profilePic}
-                        alt="Profile"
-                        style={{ width: 30, height: 30, borderRadius: "50%" }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: 30,
-                          height: 30,
-                          borderRadius: "50%",
-                          background: "#ccc",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "14px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {notif.sender?.name?.charAt(0).toUpperCase() || "?"}
-                      </div>
-                    )}
-
-                    <div>
-                      <Typography variant="body2" fontWeight="bold">
-                        {notif.sender?.name || "Unknown Sender"}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {notif.message}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="textSecondary"
-                        sx={{ display: "block" }}
-                      >
-                        {new Date(notif.createdAt).toLocaleString()}
-                      </Typography>
-                    </div>
-                  </div>
-                </MenuItem>
-                {index !== notifications.length - 1 && <Divider />}
-              </div>
-            ))
-          )}
-        </Menu>
-
-        {/* User Details */}
         <Box display="flex" alignItems="center" sx={{ ml: 2 }}>
           <Avatar
             src={userDetail.userProfilePic}
@@ -208,7 +109,12 @@ const Header = () => {
             {!userDetail.userProfilePic &&
               userDetail.userName?.charAt(0).toUpperCase()}
           </Avatar>
-          <Typography variant="body1" color="inherit">
+          <Typography
+            variant="body1"
+            color="inherit"
+            onClick={handleModalOpen}
+            sx={{ cursor: "pointer" }}
+          >
             {userDetail.userName || "Guest"}
           </Typography>
         </Box>
@@ -217,6 +123,114 @@ const Header = () => {
           Logout
         </Button>
       </Toolbar>
+
+      <Modal open={modalOpen} onClose={handleModalClose}>
+        <Paper
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            p: 4,
+            minWidth: 400,
+            maxWidth: 600,
+            width: "100%",
+            borderRadius: 3,
+            boxShadow: 5,
+            bgcolor: "background.paper",
+          }}
+        >
+          <Typography variant="h6" gutterBottom>
+            {editMode ? "Edit Profile" : "User Details"}
+          </Typography>
+          <Divider sx={{ mb: 3 }} />
+
+          <Box position="relative" display="flex" justifyContent="center">
+            <img
+              src={previewImage || userDetail.userProfilePic}
+              alt="Profile"
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+            {editMode && (
+              <IconButton
+                component="label"
+                sx={{
+                  position: "absolute",
+                  bottom: 5,
+                  right: "30%",
+                  bgcolor: "white",
+                  borderRadius: "50%",
+                  boxShadow: 2,
+                  "&:hover": {
+                    bgcolor: "grey.100",
+                  },
+                }}
+              >
+                <EditIcon />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+              </IconButton>
+            )}
+          </Box>
+
+          {editMode ? (
+            <TextField
+              fullWidth
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              sx={{ mb: 2, mt: 5 }}
+              placeholder={userDetail.userName || "N/A"}
+            />
+          ) : (
+            <Typography variant="body1" sx={{ textAlign: "center", mt: 5 }}>
+              <strong>Name:</strong> {userDetail.userName || "N/A"}
+            </Typography>
+          )}
+
+          <Typography variant="body1" sx={{ textAlign: "center", mt: 3 }}>
+            <strong>Email:</strong> {userDetail.userEmail || "N/A"}
+          </Typography>
+
+          {editMode ? (
+            <Button
+              onClick={handleUpdate}
+              sx={{ mt: 3, width: "100%" }}
+              variant="contained"
+              color="secondary"
+            >
+              Save Changes
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setEditMode(true)}
+              sx={{ mt: 3, width: "100%" }}
+              variant="contained"
+              color="secondary"
+            >
+              Edit Profile
+            </Button>
+          )}
+
+          <Button
+            onClick={handleModalClose}
+            sx={{ mt: 2, width: "100%" }}
+            variant="outlined"
+            color="primary"
+          >
+            Close
+          </Button>
+        </Paper>
+      </Modal>
     </AppBar>
   );
 };
