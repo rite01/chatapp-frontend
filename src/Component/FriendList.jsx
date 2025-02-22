@@ -24,7 +24,6 @@ const FriendsTable = ({ friends, handleChatClick }) => {
             <TableCell>Profile</TableCell>
             <TableCell>Name</TableCell>
             <TableCell>Email</TableCell>
-            {/* <TableCell>Action</TableCell> */}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -38,23 +37,6 @@ const FriendsTable = ({ friends, handleChatClick }) => {
               </TableCell>
               <TableCell>{row.name}</TableCell>
               <TableCell>{row.email}</TableCell>
-              {/* <TableCell>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleChatClick(row)}
-                >
-                  Chat
-                </Button>
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={() => handleUnfriend(row._id)}
-                  style={{ marginLeft: "10px" }}
-                >
-                  Unfriend
-                </Button>
-              </TableCell> */}
             </TableRow>
           ))}
         </TableBody>
