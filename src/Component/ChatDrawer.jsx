@@ -9,7 +9,6 @@ import {
   TextField,
   IconButton,
   InputAdornment,
-  Tooltip,
 } from "@mui/material";
 import { SendRounded, Edit, Delete } from "@mui/icons-material";
 import axiosInstance from "../Api/axios";
@@ -173,7 +172,7 @@ const ChatDrawer = ({
                   {new Date(chat.timestamp).toLocaleString()}
                 </Typography>
 
-                {/* {chat.sender._id !== userId && chat.seen && (
+                {chat.sender._id !== userId && chat.seen && (
                   <Typography
                     variant="caption"
                     color="success.main"
@@ -181,32 +180,28 @@ const ChatDrawer = ({
                   >
                     Seen
                   </Typography>
-                )} */}
+                )}
 
                 <Box display="flex" gap={1} mt={0.5}>
                   {chat.sender._id === userId && (
-                    <Tooltip title="Edit Message" arrow>
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => {
-                          setEditingMessage(chat._id);
-                          setEditText(chat.message);
-                        }}
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  <Tooltip title="Delete Message" arrow>
                     <IconButton
                       size="small"
-                      color="error"
-                      onClick={() => deleteMessage(chat._id)}
+                      color="primary"
+                      onClick={() => {
+                        setEditingMessage(chat._id);
+                        setEditText(chat.message);
+                      }}
                     >
-                      <Delete fontSize="small" />
+                      <Edit fontSize="small" />
                     </IconButton>
-                  </Tooltip>
+                  )}
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => deleteMessage(chat._id)}
+                  >
+                    <Delete fontSize="small" />
+                  </IconButton>
                 </Box>
               </ListItem>
             ))}
